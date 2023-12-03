@@ -1,12 +1,15 @@
 package {
+  import _kiwi.Core.UIComponent;
   import flash.display.Shape;
   import flash.display.Sprite;
   import flash.events.MouseEvent;
+  import flash.events.KeyboardEvent;
   import flash.events.TimerEvent;
   import flash.external.ExternalInterface;
   import flash.geom.Point;
   import flash.text.TextField;
   import flash.text.TextFormat;
+  import flash.text.TextFieldType;
   import flash.utils.Timer;
 
   public class Friends {
@@ -26,14 +29,18 @@ package {
     public var full_list:Sprite;
     private var _online:TextField;
     private var num_online:int = 0;
-    private var _tab:int = 0;
     public var lookup:Object;
+
+    // Header items
+    public static const TEXT_INPUT:TextField = new TextField();
+
 
     public var header_btns:Array = [];
     public var header_items:Array = [];
     private var help_area:Sprite;
 
     // Tab constants
+    private var _tab:int = 0;
     public static const TAB_ALL:uint = 0;
     public static const TAB_FAV:uint = 1;
     public static const TAB_QUICK:uint = 2;
@@ -296,7 +303,53 @@ package {
       var temp_text:TextField = renderer.text(367,3,TEXT_FORMAT_ONLINE,"left",true,"");
       temp_text.htmlText = "<b>LEFT-CLICK</b> player to <b>Whisper\nRIGHT-CLICK</b> player to <b>Remove</b>";
       this.help_area.addChild(temp_text);
+
+      // add text input for searching
+      TEXT_INPUT.type = TextFieldType.INPUT;
+      TEXT_INPUT.text = "Search friend...";
+      TEXT_INPUT.border = true;
+      TEXT_INPUT.borderColor = 0x855319;
+      TEXT_INPUT.background = true;
+      TEXT_INPUT.backgroundColor = 0x986907;
+      TEXT_INPUT.width = 100;
+      TEXT_INPUT.height = 20;
+      TEXT_INPUT.x = 10;
+      TEXT_INPUT.y = 5;
+      TEXT_INPUT.textColor = 0xFFFFFF;
+
+      TEXT_INPUT.addEventListener(KeyboardEvent.KEY_DOWN, this.onTextInputChange);
+
+      TEXT_INPUT.addEventListener(MouseEvent.CLICK, function(e:MouseEvent) : void { TEXT_INPUT.text = ""; });
+
+      this.header_section.addChild(TEXT_INPUT);
     }
+
+    // On change of text input - filter list
+    public function onTextInputChange() : void {
+      if(this.getRootComponent().textCompositionActive) return;
+      var text:String = TEXT_INPUT.text;
+      var idx:int = 0;
+      var f:Friend = null;
+      var len:int = int(this.list.length);
+      var found:Boolean = false;
+      while(idx < len) {
+        f = this.list[idx];
+        if(f.name.toLowerCase().indexOf(text.toLowerCase()) != -1) {
+          if(!f.row.stage) this.container.addChild(f.row);
+          f.row.y = this.render_list.indexOf(f) * 40;
+          f.bg.visible = this.render_list.indexOf(f) % 2 != 0;
+          found = true;
+        } else if(f.seen && f.row.stage) this.container.removeChild(f.row);
+        idx++;
+      }
+      if(!found) {
+        this.container.addChild(renderer.text(0,0,TEXT_FORMAT_ONLINE,"left",true,"No results found"));
+      }
+    }
+
+      private function getRootComponent() : UIComponent {
+        return this.stage.getChildAt(0) as UIComponent;
+      }
 
     private function buildTabButtons() : void {
       this.header_btns = [
