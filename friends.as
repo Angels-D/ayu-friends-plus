@@ -34,6 +34,8 @@ package {
     // Header items
     public static const TEXT_INPUT:TextField = new TextField();
 
+    public var leechers_count:int = 0;
+    public var cleaners_count:int = 0;
 
     public var header_btns:Array = [];
     public var header_items:Array = [];
@@ -108,7 +110,12 @@ package {
     }
 
     public function set online(num:int) : void {
-      if(this.tab != TAB_IGNORED) this._online.htmlText = "<b>" + num + "</b><font color=\"#CECED7\">/" + (this.list.length - this.list_request.length - this.list_ignored.length) + "</font> " + FRIENDS_ONLINE;
+      if(tab == TAB_SHIP) {
+        this._online.htmlText = "<font color=\"#CECED7\">" + this.leechers_count + " LEECHES / " + this.cleaners_count + " CLEANERS</font>";
+      } else if(this.tab != TAB_IGNORED) {
+        this._online.htmlText = "<b>" + num + "</b><font color=\"#CECED7\">/" + (this.list.length - this.list_request.length - this.list_ignored.length) + "</font> " + FRIENDS_ONLINE;
+      }
+
       this.num_online = num;
     }
 
@@ -142,8 +149,15 @@ package {
         this.header_items[TAB_QUICK][2].count++;
       }
 
-      if(abi.leechers[friend.uid]) this.list_leechers.push(friend);
-      if(abi.cleaners[friend.uid]) this.list_cleaners.push(friend);
+      if(abi.leechers[friend.uid]) {
+        this.list_leechers.push(friend);
+        this.leechers_count++;
+      }
+
+      if(abi.cleaners[friend.uid]) {
+        this.list_cleaners.push(friend);
+        this.cleaners_count++;
+      }
 
       if(is_online) ++this.online;
       else if(is_request && can_accept) {
@@ -188,6 +202,8 @@ package {
       this.list.splice(idx,1);
       if(f.is_online) {
         if(abi.quick[f.uid]) this.header_items[TAB_QUICK][2].count--;
+        if(abi.leechers[f.uid]) this.leechers_count--;
+        if(abi.cleaners[f.uid]) this.cleaners_count--;
         --this.online;
       } else if(f.is_request && f.can_accept) {
         --this.requests;
@@ -235,6 +251,8 @@ package {
       this.online = 0;
       this.header_items[TAB_QUICK][2].count = 0;
       this.header_items[TAB_REQUEST][1].count = 0;
+      this.leechers_count = 0;
+      this.cleaners_count = 0;
       this.requests = 0;
       this.lookup = {};
     }
@@ -423,7 +441,6 @@ package {
       this.header_items[TAB_ALL][1].addEventListener(MouseEvent.MOUSE_OUT,this.onHelpMouseOut);
 
       this.header_items[TAB_QUICK][1].addClickListener(this.onClearQuickList);
-      this.header_items[TAB_QUICK][1].disabled = true;
       this.header_items[TAB_QUICK][2].addClickListener(this.onInviteQuickList);
       this.header_items[TAB_QUICK][2].count = 0;
 
@@ -456,7 +473,6 @@ package {
       while(0 < this.list_quick.length) this.list_quick[0].onQuickList();
       abi.configWrite("quick_list");
       this.header_items[TAB_QUICK][2].count = 0;
-      this.header_items[TAB_QUICK][1].disabled = true;
     }
 
 
@@ -474,6 +490,8 @@ package {
       while(0 < this.list_cleaners.length) this.list_cleaners[0].onClean();
       abi.configWrite("list_leechers");
       abi.configWrite("list_cleaners");
+      this.leechers_count = 0;
+      this.cleaners_count = 0;
     }
 
     private function onAcceptAll() : void {
@@ -515,7 +533,6 @@ package {
         ExternalInterface.call("OnTabClick",0);
         this._online.alpha = 1;
       }
-      this.header_items[TAB_QUICK][1].disabled = this.list_quick.length == 0;
       this.tab = TAB_QUICK;
     }
 
@@ -642,7 +659,7 @@ package {
         this.list_request.sortOn(["can_accept", "name"], [Array.DESCENDING, Array.CASEINSENSITIVE]);
         this.render_list = this.render_list.concat(this.list_request);
       } else if(this.tab == TAB_FAV) {
-        this.list_fav.sortOn("name", Array.CASEINSENSITIVE);
+        this.list_fav.sortOn(["is_online", "name"], [Array.DESCENDING, Array.CASEINSENSITIVE]);
         this.render_list = this.render_list.concat(this.list_fav);
       } else if(this.tab == TAB_QUICK) {
         this.list_quick.sortOn(["is_online", "name"], [Array.DESCENDING, Array.CASEINSENSITIVE]);
@@ -655,7 +672,7 @@ package {
         this.list_leechers.sortOn("name", Array.CASEINSENSITIVE);
         this.render_list = this.render_list.concat(this.list_cleaners).concat(this.list_leechers);
       } else {
-        this.list_fav.sortOn("name",Array.CASEINSENSITIVE);
+        this.list_fav.sortOn(["is_online", "name"], [Array.DESCENDING, Array.CASEINSENSITIVE]);
         this.list_default.sortOn(["is_online", "name"], [Array.DESCENDING, Array.CASEINSENSITIVE]);
         this.render_list = this.render_list.concat(this.list_fav).concat(this.list_default);
       }
@@ -729,7 +746,6 @@ package {
       if(this.list_quick.indexOf(f) == -1) {
         this.list_quick.push(f);
         this.header_items[TAB_QUICK][2].count++;
-        this.header_items[TAB_QUICK][1].disabled = false;
       }
       abi.configWrite("quick_list");
     }
@@ -739,7 +755,6 @@ package {
       if(idx != -1) {
         this.list_quick.splice(idx,1);
         this.header_items[TAB_QUICK][2].count--;
-        if(this.header_items[TAB_QUICK][2].count == 0) this.header_items[TAB_QUICK][1].disabled = true;
       }
       if(this.tab == TAB_QUICK) this.onSortTimerComplete();
       if(is_internal) abi.configWrite("quick_list");
@@ -748,6 +763,7 @@ package {
     public function onLeecherAdd(f:Friend) : void {
       if(this.list_leechers.indexOf(f) == -1 && this.list_cleaners.indexOf(f) == -1) {
         this.list_leechers.push(f);
+        this.leechers_count++;
         abi.configWrite("list_leechers");
       }
     }
@@ -756,6 +772,7 @@ package {
       var idx:int = this.list_leechers.indexOf(f);
       if(idx != -1) {
         this.list_leechers.splice(idx, 1);
+        this.leechers_count--;
         abi.configWrite("list_leechers");
         this.onSortTimerComplete();
       }
@@ -764,6 +781,7 @@ package {
     public function onCleanerAdd(f:Friend) : void {
       if(this.list_cleaners.indexOf(f) == -1 && this.list_leechers.indexOf(f) == -1) {
         this.list_cleaners.push(f);
+        this.cleaners_count++;
         abi.configWrite("list_cleaners");
       }
     }
@@ -772,6 +790,7 @@ package {
       var idx:int = this.list_cleaners.indexOf(f);
       if(idx != -1) {
         this.list_cleaners.splice(idx, 1);
+        this.cleaners_count--;
         abi.configWrite("list_cleaners");
         this.onSortTimerComplete();
       }
