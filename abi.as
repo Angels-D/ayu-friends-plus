@@ -22,14 +22,16 @@ package {
       "max_rows":16,
       "drop_nameless":true,
       "default_tab":0,
-      "vertical_offset":0
+      "vertical_offset":0,
+      "checked":false
     };
 
     private static const convar_types:Object = {
       "default_tab":[CType.UINT,0,3],
       "drop_namepless":[CType.BOOL],
       "vertical_offset":[CType.INT,-1000,1000],
-      "max_rows":[CType.UINT,1,25]
+      "max_rows":[CType.UINT,1,25],
+      "checked":[CType.BOOL]
     };
 
     public static var msg:Object = {

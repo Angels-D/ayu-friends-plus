@@ -26,8 +26,10 @@ package {
     public var full_list:Sprite;
     private var _online:TextField;
     private var num_online:int = 0;
-    private var _tab:int = 0;
     public var lookup:Object;
+
+    private var _tab:int = 0;
+    private var _checked:Boolean = false;
 
     public var leechers_count:int = 0;
     public var cleaners_count:int = 0;
@@ -62,6 +64,15 @@ package {
       this.lookup = {};
       this.buildContainer();
       this.tab = abi.cfg.default_tab;
+      this.checked = abi.cfg.checked;
+    }
+
+    private function get checked() : Boolean {
+      return this._checked;
+    }
+
+    private function set checked(val:Boolean) : void {
+      this._checked = val;
     }
 
     public function set tab(tab:int) : void {
@@ -161,6 +172,12 @@ package {
         this.requests++;
         this.header_items[TAB_REQUEST][1].count = this.requests;
       }
+
+      // Check if checkbox of direct list is checked, if so, add to the quick list directly
+      // if (!abi.quick[friend.uid] && abi.cfg["checked"]) {
+      //   this.onQuickListAdd(friend);
+      // }
+
       this.queueDelayedSort();
     }
 
@@ -297,6 +314,19 @@ package {
       this.full_list.addChild(this.container);
       this.full_list.addChild(this.clipping_mask);
       this.full_list.addChild(this.header_section);
+
+      // Add the checkbox
+      var checkbox:Checkbox = new Checkbox();
+      checkbox.x = 360;
+      checkbox.y = -40;
+      this.full_list.addChild(checkbox);
+
+      var debug:TextField = renderer.text(0,0,TEXT_FORMAT_ONLINE,"",true,"DEBUG:::: "+ this._checked);
+      debug.width = 355;
+      debug.y = 4;
+      debug.height = 16;
+      this.full_list.addChild(debug);
+
       this.full_list.visible = false;
     }
 
