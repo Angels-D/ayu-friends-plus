@@ -7,6 +7,8 @@ package {
 
     public static var M:*;
 
+    public static const color_names:Array = ["red", "orange", "yellow", "green", "cyan", "blue", "purple"];
+
     public static const CType:Object = {
       "BOOL": 0,
       "UINT": 1,
@@ -21,14 +23,16 @@ package {
       "max_rows":16,
       "drop_nameless":true,
       "default_tab":0,
+      "active_color":"red",
       "vertical_offset":0
     };
 
     private static const convar_types:Object = {
-      "default_tab":[CType.UINT,0,3],
+      "default_tab":[CType.UINT, 0, 3],
+      "active_color":[CType.STRING],
       "drop_namepless":[CType.BOOL],
-      "vertical_offset":[CType.INT,-1000,1000],
-      "max_rows":[CType.UINT,1,25]
+      "vertical_offset":[CType.INT, -1000, 1000],
+      "max_rows":[CType.UINT, 1, 25]
     };
 
     public static var msg:Object = {
@@ -47,8 +51,15 @@ package {
     public static var favs:Object = {};
     public static var alts:Object = {};
     public static var quick:Object = {};
-    public static var cleaners:Object = {};
-    public static var leechers:Object = {};
+    public static var colors:Object = {
+      "red": {},
+      "orange": {},
+      "yellow": {},
+      "green": {},
+      "cyan": {},
+      "blue": {},
+      "purple": {}
+    };
 
     public function config() {
       super();
@@ -92,12 +103,11 @@ package {
       } else if(key == "quick_list") {
         arr = processConfigList(val);
         if(arr) quick = arrayToObject(arr);
-      } else if(key == "list_cleaners") {
-        arr = processConfigList(val);
-        if(arr) cleaners = arrayToObject(arr);
-      } else if(key == "list_leechers") {
-        arr = processConfigList(val);
-        if(arr) leechers = arrayToObject(arr);
+      } else if (key == "colors") {
+        for each (var color:String in this.color_names) {
+          arr = processConfigList(val);
+          if(arr) this.colors[color] = arrayToObject(arr);
+        }
       }
     }
 
@@ -132,8 +142,15 @@ package {
       else if(key == "quick_list") out = "[" + objectToArray(quick).join(",") + "]";
       else if(key == "list_cleaners") out = "[" + objectToArray(cleaners).join(",") + "]";
       else if(key == "list_leechers") out = "[" + objectToArray(leechers).join(",") + "]";
+      else if(key == "colors") {
+        for each (var color:String in this.color_names) {
+          out = "[" + objectToArray(this.colors[color]) + "]";
+          ExternalInterface.call("UIComponent.OnSaveConfig", FILE_NAME, MOD_NAME + ":" + color, out);
+        }
+        return;
+      }
 
-      if(out != "") ExternalInterface.call("UIComponent.OnSaveConfig",FILE_NAME,MOD_NAME + ":" + key.replace("_","-"),out);
+      if(out != "") ExternalInterface.call("UIComponent.OnSaveConfig", FILE_NAME, MOD_NAME + ":" + key.replace("_","-"), out);
     }
 
     private static function processConfigList(val:String) : Array {
